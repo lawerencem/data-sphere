@@ -15,12 +15,15 @@ Build the project requires [node][node] & [npm][npm].  Once you've installed tho
 # Other userful commands
 
 To generate project documentation:
+
     grunt docs
     
 To lint the code:
+
     grunt jshint:console
 
 To host the examples in a simple http server at [localhost:8080/app][http://localhost:8080/app]:
+
     npm start
 
 # Inspiration for the Project
