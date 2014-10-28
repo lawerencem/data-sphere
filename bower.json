@@ -1,0 +1,54 @@
+{
+  "name": "neon-gtd",
+  "description": "A sample geo-temporal analysis dashboard that uses the neon.js library to show interactions between multiple visualizations of a dataset.",
+  "version": "0.8.0",
+  "homepage": "https://github.com/NextCenturyCorporation/neon-gtd",
+  "license": "Apache v2",
+  "private": true,
+  "dependencies": {
+    "angular": "1.2.x",
+    "angular-loader": "1.2.x",
+    "angular-mocks": "1.2.x",
+    "angular-route": "1.2.x",
+    "bootstrap": "3.2.0",
+    "d3": "~3.0",
+    "leapjs": "v0.6.2",
+    "threejs": "r69",
+    "threejs-examples": "r68"
+  },
+  "exportsOverride": {
+    "angular-mocks": {
+      "js": "**/*.js",
+      "css": "**/*.css"
+    },
+    "bootstrap-*": {
+      "js": "**/*.js",
+      "css": "**/*.css"
+    },
+    "bootstrap": {
+      "js": "dist/js/*.js",
+      "css": "dist/css/*.css",
+      "fonts": "dist/fonts/*.*"
+    },
+    "d3": {
+      "js": "**/d3.min.js",
+      "css": "**/*.css"
+    },
+    "threejs-examples": {
+      "js": "examples/js/*.js",
+      "js/renderers": "examples/js/renderers/*.js",
+      "js/renderers/plugins": "examples/js/renderers/plugins/*.js",
+      "js/controls": "examples/js/controls/*.js",
+      "js/effects": "examples/js/effects/*.js",
+      "js/libs": "examples/js/libs/*.js"
+    },
+    "*": {
+      "js": [
+        "**/*.js",
+        "**/*min.js",
+        "**/*.map"
+      ],
+      "css": "**/*.css"
+    }
+  }
+}
