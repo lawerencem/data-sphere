@@ -22,7 +22,7 @@ To lint the code:
 
     grunt jshint:console
 
-To host the examples in a simple http server at [localhost:8080/app][http://localhost:8080/app]:
+To host the examples in a simple http server at [localhost:8000/app][http://localhost:8000/app]:
 
     npm start
 
