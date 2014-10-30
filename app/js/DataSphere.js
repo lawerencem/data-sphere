@@ -1,5 +1,4 @@
-
-
+"use strict";
 /**
  * Copyright 2014 Lawerence E. Mize, Jr.
  *
@@ -23,7 +22,7 @@ window.DataSphere = (function() {
 
     function objectify(d) {
         var object = new THREE.CSS3DObject(this);
-        object.position = d.random.position;
+        object.position.set(d.random.position.x, d.random.position.y, d.random.position.z);
         scene.add(object);
     }
 
@@ -40,7 +39,7 @@ window.DataSphere = (function() {
 
         var sphere = new THREE.Object3D();
         vector = new THREE.Vector3();
-        phi = Math.acos(-1 + ( 2 * i ) / (DataSphere.count - 1));
+        phi = Math.acos(-1 + (2 * i) / (DataSphere.count - 1));
         theta = Math.sqrt((DataSphere.count - 1) * Math.PI) * phi;
         sphere.position.x = 800 * Math.cos(theta) * Math.sin(phi);
         sphere.position.y = 800 * Math.sin(theta) * Math.sin(phi);
@@ -53,7 +52,7 @@ window.DataSphere = (function() {
         vector = new THREE.Vector3();
         phi = (i + 12) * 0.250 + Math.PI;
         helix.position.x = 1000 * Math.sin(phi);
-        helix.position.y = - (i * 8) + 500;
+        helix.position.y = (-1 * (i * 8)) + 500;
         helix.position.z = 1000 * Math.cos(phi);
         vector.x = helix.position.x * 2;
         vector.y = helix.position.y;
@@ -62,14 +61,14 @@ window.DataSphere = (function() {
         d.helix = helix;
 
         var grid = new THREE.Object3D();
-        grid.position.x = (( i % 5 ) * 400) - 800;
-        grid.position.y = ( - ( Math.floor( i / 5 ) % 5 ) * 400 ) + 800;
-        grid.position.z = (Math.floor( i / 25 )) * 1000 - 2000;
+        grid.position.x = ((i % 5) * 400) - 800;
+        grid.position.y = (-1 * (Math.floor(i / 5) % 5) * 400) + 800;
+        grid.position.z = (Math.floor(i / 25)) * 1000 - 2000;
         d.grid = grid;
     }
 
     function setLegend(arr) {
-        return arr.map(function(n,i) {
+        return arr.map(function(n, i) {
             return {
                 name: n,
                 x: (i % 4) * 48,
@@ -93,9 +92,13 @@ window.DataSphere = (function() {
         drawElements: function(data) {
             DataSphere.count = data.length;
 
-            var margin = {top: 17, right: 0, bottom: 16, left: 20},
-                width  = 225 - margin.left - margin.right,
-                height = 140 - margin.top  - margin.bottom;
+            var margin = {
+                top: 17, right: 0,
+                bottom: 16,
+                left: 20
+            };
+            var width  = 225 - margin.left - margin.right;
+            var height = 140 - margin.top  - margin.bottom;
 
             var legendArr = d3.keys(data[0].recs[0])
                 .filter(function(key) { return key !== 'year';});
@@ -243,8 +246,6 @@ window.DataSphere = (function() {
         },
 
         initialize: function() {
-            var me = this;
-
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
@@ -277,14 +278,12 @@ window.DataSphere = (function() {
         },
 
         transform: function(layout) {
-            var me = this;
-
             TWEEN.removeAll();
 
             scene.children.forEach(function(object) {
                 var newPos = object.element.__data__[layout].position;
-                var coords = new TWEEN.Tween(object.position)
-                    .to({
+                var coords = new TWEEN.Tween(object.position);
+                coords.to({
                         x: newPos.x,
                         y: newPos.y,
                         z: newPos.z
@@ -293,8 +292,8 @@ window.DataSphere = (function() {
                     .start();
 
                 var newRot = object.element.__data__[layout].rotation;
-                var rotate = new TWEEN.Tween(object.rotation)
-                    .to({
+                var rotate = new TWEEN.Tween(object.rotation);
+                rotate.to({
                         x: newRot.x,
                         y: newRot.y,
                         z: newRot.z
@@ -303,8 +302,8 @@ window.DataSphere = (function() {
                     .start();
             });
 
-            var update = new TWEEN.Tween(me)
-                .to({}, DataSphere.transformDuration)
+            var update = new TWEEN.Tween(this);
+            update.to({}, DataSphere.transformDuration)
                 .onUpdate(DataSphere.render)
                 .start();
         },
