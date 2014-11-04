@@ -90,7 +90,7 @@ module.exports = function(grunt) {
                 options: {
                     war_dist_folder: "target",
                     war_verbose: true,
-                    war_name: 'neon-gtd-' + packageJSON.version,
+                    war_name: 'data-sphere-' + packageJSON.version,
                     webxml_welcome: 'index.html',
                     webxml_display_name: packageJSON.shortDescription,
                     webxml_mime_mapping: [{
@@ -113,7 +113,6 @@ module.exports = function(grunt) {
                 description: packageJSON.description,
                 version: packageJSON.version,
                 url: packageJSON.repository.url,
-                logo: '../app/img/Neon_60x34.png',
                 options: {
                     paths: 'app/js',
                     outdir: 'docs'
