@@ -24,7 +24,9 @@ To lint the code:
 
 To host the examples in a simple http server at [localhost:8000/app][localhost]:
 
-    npm start
+    grunt connect:server:keepalive
+
+See the Grunt file for http server configuration options.
 
 # Inspiration for the Project
 
