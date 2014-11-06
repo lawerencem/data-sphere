@@ -29,6 +29,24 @@ module.exports = function(grunt) {
 
         clean: ["app/lib", "docs", "target", "reports"],
 
+        // Start a static web server using the given port and hostname/address.
+        // See https://www.npmjs.org/package/grunt-contrib-connect
+        // for more options.  Be default, this will start and exit when any
+        // other chained grunt tasks are complete.  This can be used
+        // in conjunction with automated tests.  To leave the server running
+        // for manual testing, use the following command:
+        //      grunt connect:server:keepalive
+        //
+        connect: {
+            server: {
+                options: {
+                    port: 8000,
+                    base: '.',
+                    hostname: 'localhost'  // Default is 0.0.0.0
+                }
+            }
+        },
+
         jshint: {
             options: {
                 jshintrc: '.jshintrc',
@@ -109,7 +127,7 @@ module.exports = function(grunt) {
 
         yuidoc: {
             compile: {
-                name: packageJSON.shortDescription,
+                name: packageJSON.name,
                 description: packageJSON.description,
                 version: packageJSON.version,
                 url: packageJSON.repository.url,
@@ -124,6 +142,7 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-bower-task');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-jscs');
     grunt.loadNpmTasks('grunt-contrib-yuidoc');
