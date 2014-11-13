@@ -40,9 +40,9 @@ module.exports = function(grunt) {
         connect: {
             server: {
                 options: {
-                    port: 8000,
+                    port: (process.env.PORT ? process.env.PORT : 8000),
                     base: '.',
-                    hostname: 'localhost'  // Default is 0.0.0.0
+                    hostname: (process.env.IP ? process.env.IP : 'localhost')
                 }
             }
         },
