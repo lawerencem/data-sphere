@@ -21,7 +21,7 @@ window.DataSphere = (function() {
     var width = window.innerWidth;
 
     function objectify(d) {
-        var object = new THREE.CSS3DObject(this);
+        var object = new THREE.CSS3DObject(this);  // jshint ignore:line
         object.position.set(d.random.position.x, d.random.position.y, d.random.position.z);
         scene.add(object);
     }
@@ -178,7 +178,7 @@ window.DataSphere = (function() {
                 .enter()
                 .append("g")
                 .attr("class", "legendItem")
-                .each(function(d) {
+                .each(function() {
                     d3.select(this).append("rect")
                         .attr("x", function(d) { return d.x; })
                         .attr("y", function(d) { return d.y; })
