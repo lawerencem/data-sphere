@@ -12,7 +12,7 @@ Build the project requires [node][node] & [npm][npm].  Once you've installed tho
     npm install
     grunt
 
-# Other userful commands
+# Other useful commands
 
 To generate project documentation:
 
