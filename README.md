@@ -34,7 +34,7 @@ The following sites provided some of the inspiration for this project.
 * Mike Bostock's work on [D3][d3]
 * Steven Hall's visualization blog at [delimited][delimited]
 * The [Leap Motion][leap] and its potential as a controller for [Virtual Reality][leap-vr] applications
-* The [Oculus Rift][oculus] and intersting community offerings like the [Oculus Bridge][oculus-bridge]
+* The [Oculus Rift][oculus] and interesting community offerings like the [Oculus Bridge][oculus-bridge]
 * The [Oculus REST][oculus-rest] server.  Here, I've linked the most active fork which is working on DK2 support as the [original][oculus-rest-original] has been dormant for some time.
   
 [node]: http://nodejs.org/
