@@ -49,7 +49,7 @@ The following sites provided some of the inspiration for this project.
 [threejs]: http://threejs.org/
 [oculus]: http://www.oculus.com/
 [oculus-bridge]: https://github.com/Instrument/oculus-bridge
-[oculus-rest]: https://github.com/msfeldstein/oculus-rest
+[oculus-rest]: https://github.com/SoylentGraham/oculus-rest
 [oculus-rest-original]: https://github.com/possan/oculus-rest
 [localhost]: http://localhost:8000/app
 
