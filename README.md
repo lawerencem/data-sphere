@@ -24,7 +24,7 @@ To lint the code:
 
 To host the examples in a simple http server at [localhost:8000/app][localhost]:
 
-    grunt connect:server:keepalive
+    grunt server
 
 See the Grunt file for http server configuration options.
 
