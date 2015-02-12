@@ -42,7 +42,8 @@ module.exports = function(grunt) {
                 options: {
                     port: (process.env.PORT ? process.env.PORT : 8000),
                     base: '.',
-                    hostname: (process.env.IP ? process.env.IP : 'localhost')
+                    hostname: (process.env.IP ? process.env.IP : 'localhost'),
+                    livereload: true
                 }
             }
         },
@@ -125,6 +126,13 @@ module.exports = function(grunt) {
             }
         },
 
+        watch: {
+            livereload: {
+              options: { livereload: true },
+              files: ['app/**/*'],
+            },
+        },
+
         yuidoc: {
             compile: {
                 name: packageJSON.name,
@@ -145,8 +153,10 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-jscs');
     grunt.loadNpmTasks('grunt-contrib-yuidoc');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-war');
 
     grunt.registerTask('test', ['jshint:console', 'jscs:console']);
+    grunt.registerTask('server', ['connect', 'watch']);
     grunt.registerTask('default', ['clean', 'bower:install', 'jshint:xml', 'jscs:xml', 'yuidoc', 'war']);
 };

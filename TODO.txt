@@ -1,7 +1,7 @@
 General TODO
 
 * Migrate this list to something more appropriate like Jira/Taiga
-* Enhance grunt scripts to utilize grunt server and watch the developer folders for changes
+* ~~Enhance grunt scripts to utilize grunt server and watch the developer folders for changes~~
 
 DataSphere TODO
 
