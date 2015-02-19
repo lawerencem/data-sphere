@@ -140,26 +140,29 @@ window.DataSphere = (function() {
                 .append('div')
                 .attr('class', 'element');
 
-            elements.append('div')
+            var dataElements = elements.append('div')
+                .attr('class', 'data');
+
+            dataElements.append('div')
               .attr('class', 'chartTitle')
               .html(function(d) { return d.name; });
 
-            elements.append('div')
+            dataElements.append('div')
               .attr('class', 'investData')
               .html(function(d) { return d.awards; });
 
-            elements.append('div')
+            dataElements.append('div')
               .attr('class', 'investLabel')
               .html("Investments (10 Yrs)");
 
-            elements.append("svg")
+            dataElements.append("svg")
               .attr("width",  width  + margin.left + margin.right)
               .attr("height", height + margin.top  + margin.bottom)
             .append("g")
               .attr("class", "chartg")
               .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            elements.select(".chartg")
+            dataElements.select(".chartg")
               .append("g").attr("class", "seriesg")
               .selectAll("series")
               .data(function(d) { return prepData(d.recs); })
@@ -169,7 +172,7 @@ window.DataSphere = (function() {
                 .attr("d", function(d) { return area(d.values); })
                 .style("fill", function(d) { return color(d.name); });
 
-            elements.select(".chartg")
+            dataElements.select(".chartg")
                 .append("g")
                 .attr("class", "legend")
                 .attr("transform", "translate(15, -15)")
@@ -193,12 +196,12 @@ window.DataSphere = (function() {
                         .text(function(d) { return d.name; });
                 });
 
-            elements.select(".chartg").append("g")
+            dataElements.select(".chartg").append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
                 .call(xAxis);
 
-            elements.select(".chartg").append("g")
+            dataElements.select(".chartg").append("g")
                 .attr("class", "y axis")
                 .call(yAxis)
             .append("text")
@@ -249,7 +252,7 @@ window.DataSphere = (function() {
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
-            camera.position.z = 3000;
+            camera.position.z = 2; //3000;
             camera.setLens(30);
 
             cssrenderer = new THREE.CSS3DRenderer();
@@ -259,7 +262,7 @@ window.DataSphere = (function() {
 
             controls = new THREE.TrackballControls(camera, cssrenderer.domElement);
             controls.rotateSpeed = this.rotateSpeed;
-            controls.minDistance = this.minDistance;
+            controls.minDistance = 0; //this.minDistance;
             controls.maxDistance = this.maxDistance;
             controls.addEventListener('change', this.render);
 
