@@ -78,7 +78,7 @@ window.DataSphere = (function() {
     }
 
     return {
-        rotateSpeed: 0.5,
+        rotateSpeed: 0.1,
         minDistance: 100,
         maxDistance: 6000,
         transformDuration: 1000,
@@ -138,7 +138,12 @@ window.DataSphere = (function() {
             var elements = d3.select("html")
                 .data(data).enter()
                 .append('div')
-                .attr('class', 'element');
+                .attr('class', 'element')
+                .on('click', function(d){
+                    console.log('onClick');
+                    console.log(d);
+                    camera.lookAt(d.helix.position);
+                });
 
             var dataElements = elements.append('div')
                 .attr('class', 'data');
@@ -252,7 +257,9 @@ window.DataSphere = (function() {
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
-            camera.position.z = 2; //3000;
+            camera.position.z = 1;
+            camera.position.x = 0;
+            camera.position.y = 0;
             camera.setLens(30);
 
             cssrenderer = new THREE.CSS3DRenderer();
@@ -260,10 +267,13 @@ window.DataSphere = (function() {
             cssrenderer.domElement.style.position = 'absolute';
             document.getElementById('container').appendChild(cssrenderer.domElement);
 
-            controls = new THREE.TrackballControls(camera, cssrenderer.domElement);
+            controls = new THREE.CameraControls(camera, cssrenderer.domElement);
             controls.rotateSpeed = this.rotateSpeed;
-            controls.minDistance = 0; //this.minDistance;
+            controls.minDistance = this.minDistance;
             controls.maxDistance = this.maxDistance;
+
+            // Make sure the camera stays in the center of the helix/cube
+            controls.noPan = true;
             controls.addEventListener('change', this.render);
 
             d3.select("#menu").selectAll('button')
