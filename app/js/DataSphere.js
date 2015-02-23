@@ -19,6 +19,7 @@ window.DataSphere = (function() {
     var scene;
     var height = window.innerHeight;
     var width = window.innerWidth;
+    var stats;
 
     function objectify(d) {
         var object = new THREE.CSS3DObject(this);  // jshint ignore:line
@@ -78,7 +79,7 @@ window.DataSphere = (function() {
     }
 
     return {
-        rotateSpeed: 0.1,
+        rotateSpeed: 0.05,
         minDistance: 100,
         maxDistance: 6000,
         transformDuration: 1000,
@@ -87,6 +88,7 @@ window.DataSphere = (function() {
             requestAnimationFrame(DataSphere.animate);
             TWEEN.update();
             controls.update();
+            stats.update();
         },
 
         drawElements: function(data) {
@@ -254,6 +256,11 @@ window.DataSphere = (function() {
         },
 
         initialize: function() {
+            stats = new Stats();
+            stats.domElement.style.cssText = 'position: absolute; right: 0; top: 0; z-index: 100; ';
+            document.body.appendChild( stats.domElement );
+
+
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
