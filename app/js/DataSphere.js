@@ -267,7 +267,7 @@ window.DataSphere = (function() {
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
-            camera.position.z = 0;
+            camera.position.z = 1;
             camera.position.x = 0;
             camera.position.y = 0;
             camera.setLens(30);
@@ -279,15 +279,11 @@ window.DataSphere = (function() {
 
             controls = new THREE.CameraControls(camera, cssrenderer.domElement, controller);
             controls.rotateSpeed = this.rotateSpeed;
-            controls.minDistance = this.minDistance;
-            controls.maxDistance = this.maxDistance;
 
-            // Make sure the camera stays in the center of the helix/cube
-            controls.noPan = true;
             controls.addEventListener('change', this.render);
 
             d3.select("#menu").selectAll('button')
-                .data(['sphere', 'helix', 'grid']).enter()
+                .data(['sphere', 'helix']).enter()
                     .append('button')
                     .html(function(d) { return d; })
                     .on('click', function(d) {
@@ -295,38 +291,15 @@ window.DataSphere = (function() {
                         DataSphere.transform(d);
                     });
 
-            // Show the hands from the leap
-            // Leap.loop()
-            //     .use('boneHand', {
-            //       targetEl: document.body,
-            //       arm: true,
-            //     });
-
             // http://codepen.io/neptunius/pen/AJvbl?editors=101
             // Emit gestures before frames
-            controller.addStep(function(frame){
-                for(var g = 0; g < frame.gestures.length; g++){
-                    var gesture = frame.gestures[g];
-                    controller.emit(gesture.type, gesture, frame);
-                }
-                return frame;
-            });
-
-            // Swipe event listener
-            // controller.on('swipe', function(swipe, frame){
-            //       // Print its data when the state is start or stop
-            //       if (swipe.state == 'start' || swipe.state == 'stop') {
-            //         var dir = swipe.direction;
-            //         var dirStr = dir[0] > 0.8 ? 'right' : dir[0] < -0.8 ? 'left'
-            //                    : dir[1] > 0.8 ? 'up'    : dir[1] < -0.8 ? 'down'
-            //                    : dir[2] > 0.8 ? 'backward' : 'forward';
-            //         console.log(swipe.state, swipe.type, swipe.id, dirStr,
-            //                     'direction:', dir);
-            //         console.log(swipe);
-            //       }
+            // controller.addStep(function(frame){
+            //     for(var g = 0; g < frame.gestures.length; g++){
+            //         var gesture = frame.gestures[g];
+            //         controller.emit(gesture.type, gesture, frame);
+            //     }
+            //     return frame;
             // });
-
-
 
             controller.connect();
         },

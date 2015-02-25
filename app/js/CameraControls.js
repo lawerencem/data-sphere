@@ -6,11 +6,10 @@
 
 THREE.CameraControls = function (object, domElement, controller) {
     var _this = this;
-    var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
+    var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1 };
 
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
-    this.controller = controller;
 
     // API
     this.enabled = true;
@@ -19,23 +18,28 @@ THREE.CameraControls = function (object, domElement, controller) {
 
     this.rotateSpeed = 1.0;
     this.zoomSpeed = 1.2;
-    this.panSpeed = 0.3;
 
     this.noRotate = false;
     this.noZoom = false;
-    this.noPan = false;
     this.noRoll = false;
+
+    // Leap rotate params
+    // rotation
+    this.rotateHands         = 1;
+    this.rotateFingers       = [3, 5];
+    this.rotateRightHanded   = true;
+    this.rotateHandPosition  = true;
+    this.rotateStabilized    = false;
+    this.rotateMin           = 0;
+    this.rotateMax           = Math.PI;
 
     this.staticMoving = false;
     this.dynamicDampingFactor = 0.2;
 
-    this.minDistance = 0;
-    this.maxDistance = Infinity;
-
-    this.keys = [ 65 /*A*/, 83 /*S*/, 68 /*D*/ ];
-
     // internals
     this.target = new THREE.Vector3();
+    var _rotateXLast         = null;
+    var _rotateYLast         = null;
 
     var EPS = 0.000001;
 
@@ -50,13 +54,7 @@ THREE.CameraControls = function (object, domElement, controller) {
     _rotateEnd = new THREE.Vector3(),
 
     _zoomStart = new THREE.Vector2(),
-    _zoomEnd = new THREE.Vector2(),
-
-    _touchZoomDistanceStart = 0,
-    _touchZoomDistanceEnd = 0,
-
-    _panStart = new THREE.Vector2(),
-    _panEnd = new THREE.Vector2();
+    _zoomEnd = new THREE.Vector2();
 
     // for reset
     this.target0 = this.target.clone();
@@ -68,13 +66,6 @@ THREE.CameraControls = function (object, domElement, controller) {
     var startEvent = { type: 'start'};
     var endEvent = { type: 'end'};
 
-    this.curYAngle = 0;
-    this.curXAngle = 0;
-    this.curZAngle = 0;
-
-    this.yAxis = new THREE.Vector3(0,1,0);
-    this.xAxis = new THREE.Vector3(0,0,1);
-    this.zAxis = new THREE.Vector3(1,0,0);
 
     // methods
     this.handleResize = function () {
@@ -123,7 +114,7 @@ THREE.CameraControls = function (object, domElement, controller) {
                 ( pageX - _this.screen.width * 0.5 - _this.screen.left ) / (_this.screen.width*.5),
                 ( _this.screen.height * 0.5 + _this.screen.top - pageY ) / (_this.screen.height*.5),
                 0.0
-            );on
+            );
             var length = mouseOnBall.length();
 
             if ( _this.noRoll ) {
@@ -147,6 +138,194 @@ THREE.CameraControls = function (object, domElement, controller) {
             return vector;
         };
     }());
+
+    // Leap helper functions
+    this.transformFactor = function(action) {
+        switch(action) {
+            case 'rotate':
+            return _this.rotateSpeed * (_this.rotateHandPosition ? 1 : _this.fingerFactor);
+            case 'zoom':
+            return _this.zoomSpeed * (_this.zoomHandPosition ? 1 : _this.fingerFactor);
+            case 'pan':
+            return _this.panSpeed * (_this.panHandPosition ? 1 : _this.fingerFactor);
+        };
+    };
+
+    this.rotateTransform = function(delta) {
+        return _this.transformFactor('rotate') * THREE.Math.mapLinear(delta, 100, -100, -Math.PI, Math.PI);
+    };
+
+    this.zoomTransform = function(delta) {
+        return _this.transformFactor('zoom') * THREE.Math.mapLinear(delta, -400, 400, -_this.step, _this.step);
+    };
+
+    this.panTransform = function(delta) {
+        return _this.transformFactor('pan') * THREE.Math.mapLinear(delta, -400, 400, -_this.step, _this.step);
+    };
+
+    this.applyGesture = function(frame, action) {
+        var hl = frame.hands.length;
+        var fl = frame.pointables.length;
+
+        switch(action) {
+            case 'rotate':
+            if (_this.rotateHands instanceof Array) {
+                if (_this.rotateFingers instanceof Array) {
+                    if (_this.rotateHands[0] <= hl && hl <= _this.rotateHands[1] && _this.rotateFingers[0] <= fl && fl <= _this.rotateFingers[1]) return true;
+                } else {
+                    if (_this.rotateHands[0] <= hl && hl <= _this.rotateHands[1] && _this.rotateFingers == fl) return true;
+                };
+            } else {
+                if (_this.rotateFingers instanceof Array) {
+                    if (_this.rotateHands == hl && _this.rotateFingers[0] <= fl && fl <= _this.rotateFingers[1]) return true;
+                } else {
+                    if (_this.rotateHands == hl && _this.rotateFingers == fl) return true;
+                };
+            };
+            break;
+            case 'zoom':
+            if (_this.zoomHands instanceof Array) {
+                if (_this.zoomFingers instanceof Array) {
+                    if (_this.zoomHands[0] <= hl && hl <= _this.zoomHands[1] && _this.zoomFingers[0] <= fl && fl <= _this.zoomFingers[1]) return true;
+                } else {
+                    if (_this.zoomHands[0] <= hl && hl <= _this.zoomHands[1] && _this.zoomFingers == fl) return true;
+                };
+            } else {
+                if (_this.zoomFingers instanceof Array) {
+                    if (_this.zoomHands == hl && _this.zoomFingers[0] <= fl && fl <= _this.zoomFingers[1]) return true;
+                } else {
+                    if (_this.zoomHands == hl && _this.zoomFingers == fl) return true;
+                };
+            };
+            break;
+            case 'pan':
+            if (_this.panHands instanceof Array) {
+                if (_this.panFingers instanceof Array) {
+                    if (_this.panHands[0] <= hl && hl <= _this.panHands[1] && _this.panFingers[0] <= fl && fl <= _this.panFingers[1]) return true;
+                } else {
+                    if (_this.panHands[0] <= hl && hl <= _this.panHands[1] && _this.panFingers == fl) return true;
+                };
+            } else {
+                if (_this.panFingers instanceof Array) {
+                    if (_this.panHands == hl && _this.panFingers[0] <= fl && fl <= _this.panFingers[1]) return true;
+                } else {
+                    if (_this.panHands == hl && _this.panFingers == fl) return true;
+                };
+            };
+            break;
+        };
+
+        return false;
+    };
+
+    this.hand = function(frame, action) {
+        var hds = frame.hands;
+
+        if (hds.length > 0) {
+            if (hds.length == 1) {
+                return hds[0];
+            } else if (hds.length == 2) {
+                var lh, rh;
+                if (hds[0].palmPosition[0] < hds[1].palmPosition[0]) {
+                    lh = hds[0];
+                    rh = hds[1];
+                } else {
+                    lh = hds[1];
+                    rh = hds[0];
+                }
+                switch(action) {
+                    case 'rotate':
+                    if (_this.rotateRightHanded) {
+                        return rh;
+                    } else {
+                        return lh;
+                    };
+                    case 'zoom':
+                    if (_this.zoomRightHanded) {
+                        return rh;
+                    } else {
+                        return lh;
+                    };
+                    case 'pan':
+                    if (_this.panRightHanded) {
+                        return rh;
+                    } else {
+                        return lh;
+                    };
+                };
+            };
+        };
+
+        return false;
+    };
+
+    this.position = function(frame, action) {
+        // assertion: if `...HandPosition` is false, then `...Fingers` needs to be 1 or [1, 1]
+        var h;
+        switch(action) {
+            case 'rotate':
+            h = _this.hand(frame, 'rotate');
+            return (_this.rotateHandPosition 
+                ? (_this.rotateStabilized ? h.stabilizedPalmPosition : h.palmPosition) 
+                : (_this.rotateStabilized ? frame.pointables[0].stabilizedTipPosition : frame.pointables[0].tipPosition)
+                );
+            case 'zoom':
+            h = _this.hand(frame, 'zoom');
+            return (_this.zoomHandPosition 
+                ? (_this.zoomStabilized ? h.stabilizedPalmPosition : h.palmPosition) 
+                : (_this.zoomStabilized ? frame.pointables[0].stabilizedTipPosition : frame.pointables[0].tipPosition)
+                );
+            case 'pan':
+            h = _this.hand(frame, 'pan');
+            return (_this.panHandPosition
+                ? (_this.panStabilized ? h.stabilizedPalmPosition : h.palmPosition) 
+                : (_this.panStabilized ? frame.pointables[0].stabilizedTipPosition : frame.pointables[0].tipPosition)
+                );
+        };
+    };
+
+    // Leap methods
+    this.leapRotateCamera = function(frame) {
+        if (_this.applyGesture(frame, 'rotate')) {
+            // rotate around axis in xy-plane (in target coordinate system) which is orthogonal to camera vector
+            var y = _this.position(frame, 'rotate')[1];
+            if (!_rotateYLast){
+                _rotateYLast = y;
+            }
+            var yDelta = y - _rotateYLast;
+            var t = new THREE.Vector3().subVectors(_this.object.position, _this.target); // translate
+            angleDelta = _this.rotateTransform(yDelta);
+            newAngle = t.angleTo(new THREE.Vector3(0, 1, 0)) + angleDelta;
+            if (_this.rotateMin < newAngle && newAngle < _this.rotateMax) {
+                var n = new THREE.Vector3(t.z, 0, -t.x).normalize();
+                var matrixX = new THREE.Matrix4().makeRotationAxis(n, angleDelta);
+                _this.object.position = t.applyMatrix4(matrixX).add(_this.target); // rotate and translate back        
+            };
+
+            // rotate around y-axis translated by target vector
+            var x = _this.position(frame, 'rotate')[0];
+            if (!_rotateXLast) {
+                _rotateXLast = x;
+            }
+            var xDelta = x - _rotateXLast;
+            var matrixY = new THREE.Matrix4().makeRotationY(-_this.rotateTransform(xDelta));
+            _this.object.position.sub(_this.target).applyMatrix4(matrixY).add(_this.target); // translate, rotate and translate back
+            _this.object.lookAt(_this.target);
+
+            _rotateYLast = y;
+            _rotateXLast = x;   
+        } else {
+            _rotateYLast = null;
+            _rotateXLast = null;      
+        }
+        _this.dispatchEvent( changeEvent );
+    };
+
+    this.updateFrame = function(frame) {
+        if (_this.enabled) {
+            _this.leapRotateCamera(frame);
+        };
+    };
 
     this.rotateCamera = (function(){
         var axis = new THREE.Vector3(),
@@ -178,58 +357,14 @@ THREE.CameraControls = function (object, domElement, controller) {
     }());
 
     this.zoomCamera = function () {
-        if ( _state === STATE.TOUCH_ZOOM_PAN ) {
-            var factor = _touchZoomDistanceStart / _touchZoomDistanceEnd;
-            _touchZoomDistanceStart = _touchZoomDistanceEnd;
+        var factor = 1.0 + ( _zoomEnd.y - _zoomStart.y ) * _this.zoomSpeed;
+
+        if ( factor !== 1.0 && factor > 0.0 ) {
             _eye.multiplyScalar( factor );
-        } else {
-            var factor = 1.0 + ( _zoomEnd.y - _zoomStart.y ) * _this.zoomSpeed;
-
-            if ( factor !== 1.0 && factor > 0.0 ) {
-                _eye.multiplyScalar( factor );
-                if ( _this.staticMoving ) {
-                    _zoomStart.copy( _zoomEnd );
-                } else {
-                    _zoomStart.y += ( _zoomEnd.y - _zoomStart.y ) * this.dynamicDampingFactor;
-                }
-            }
-        }
-    };
-
-    this.panCamera = (function(){
-        var mouseChange = new THREE.Vector2(),
-            objectUp = new THREE.Vector3(),
-            pan = new THREE.Vector3();
-
-        return function () {
-            mouseChange.copy( _panEnd ).sub( _panStart );
-
-            if ( mouseChange.lengthSq() ) {
-                mouseChange.multiplyScalar( _eye.length() * _this.panSpeed );
-
-                pan.copy( _eye ).cross( _this.object.up ).setLength( mouseChange.x );
-                pan.add( objectUp.copy( _this.object.up ).setLength( mouseChange.y ) );
-
-                _this.object.position.add( pan );
-                _this.target.add( pan );
-
-                if ( _this.staticMoving ) {
-                    _panStart.copy( _panEnd );
-                } else {
-                      _panStart.add( mouseChange.subVectors( _panEnd, _panStart ).multiplyScalar( _this.dynamicDampingFactor ) );
-                }
-            }
-        }
-    }());
-
-    this.checkDistances = function () {
-        if ( !_this.noZoom || !_this.noPan ) {
-            if ( _eye.lengthSq() > _this.maxDistance * _this.maxDistance ) {
-                _this.object.position.addVectors( _this.target, _eye.setLength( _this.maxDistance ) );
-            }
-
-            if ( _eye.lengthSq() < _this.minDistance * _this.minDistance ) {
-                _this.object.position.addVectors( _this.target, _eye.setLength( _this.minDistance ) );
+            if ( _this.staticMoving ) {
+                _zoomStart.copy( _zoomEnd );
+            } else {
+                _zoomStart.y += ( _zoomEnd.y - _zoomStart.y ) * this.dynamicDampingFactor;
             }
         }
     };
@@ -245,13 +380,7 @@ THREE.CameraControls = function (object, domElement, controller) {
             _this.zoomCamera();
         }
 
-        if ( !_this.noPan ) {
-            _this.panCamera();
-        }
-
         _this.object.position.addVectors( _this.target, _eye );
-
-        _this.checkDistances();
 
         _this.object.lookAt( _this.target );
 
@@ -281,92 +410,6 @@ THREE.CameraControls = function (object, domElement, controller) {
 
     // listeners
 
-    function keydown( event ) {
-        console.log(event.keyCode);
-        /**
-         * 37 = left
-         * 39 = right
-         * 38 = up
-         * 40 = down
-         */
-
-        switch(event.keyCode){
-            // Left
-            case 37:
-                console.log('Left');
-                _this.curYAngle += 10;
-                break;
-            // Right
-            case 39:
-                console.log('Right');
-                _this.curYAngle -= 10;
-                break;
-
-            // Up
-            case 38:
-                console.log('Up');
-                _this.curXAngle += 10;
-                break;
-            // Down
-            case 40:
-                console.log('Down');
-                _this.curXAngle -= 10;
-                break;
-
-            // Space
-            case 32:
-                _this.curXAngle = 0;
-                _this.curYAngle = 0;
-                break;
-            default:
-                return;
-        }
-
-        updateCamera();
-
-        // console.log('keydown', event);
-        // if ( _this.enabled === false ) return;
-
-        // window.removeEventListener( 'keydown', keydown );
-
-        // _prevState = _state;
-
-        // if ( _state !== STATE.NONE ) {
-        //     return;
-        // } else if ( event.keyCode === _this.keys[ STATE.ROTATE ] && !_this.noRotate ) {
-        //     _state = STATE.ROTATE;
-        // } else if ( event.keyCode === _this.keys[ STATE.ZOOM ] && !_this.noZoom ) {
-        //     _state = STATE.ZOOM;
-        // } else if ( event.keyCode === _this.keys[ STATE.PAN ] && !_this.noPan ) {
-        //     _state = STATE.PAN;
-        // }
-    }
-
-    function updateCamera(){
-        var xPrime = new THREE.Vector3(Math.cos(degToRad(_this.curYAngle)), Math.sin(degToRad(_this.curYAngle)), 0).normalize();
-
-        console.log('X: '+_this.curXAngle);
-        console.log('Y: '+_this.curYAngle);
-        console.log('Z: '+_this.curZAngle);
-
-        _this.object.rotateOnAxis(_this.yAxis, degToRad(_this.curYAngle));
-        _this.object.rotateOnAxis(xPrime, degToRad(_this.curXAngle));
-        //_this.object.rotateOnAxis(zAxis, _this.curZAngle);
-
-        _this.dispatchEvent( changeEvent );
-    }
-
-    function keyup( event ) {
-        // if ( _this.enabled === false ) return;
-
-        // _state = _prevState;
-        // window.addEventListener( 'keydown', keydown, false );
-    }
-
-    function degToRad(deg) {
-        return deg * Math.PI / 180;
-    }
-
     function mousedown( event ) {
         if ( _this.enabled === false ) return;
 
@@ -383,9 +426,6 @@ THREE.CameraControls = function (object, domElement, controller) {
         } else if ( _state === STATE.ZOOM && !_this.noZoom ) {
             _zoomStart.copy( getMouseOnScreen( event.pageX, event.pageY ) );
             _zoomEnd.copy(_zoomStart);
-        } else if ( _state === STATE.PAN && !_this.noPan ) {
-            _panStart.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-            _panEnd.copy(_panStart)
         }
 
         document.addEventListener( 'mousemove', mousemove, false );
@@ -404,8 +444,6 @@ THREE.CameraControls = function (object, domElement, controller) {
             _rotateEnd.copy( getMouseProjectionOnBall( event.pageX, event.pageY ) );
         } else if ( _state === STATE.ZOOM && !_this.noZoom ) {
             _zoomEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-        } else if ( _state === STATE.PAN && !_this.noPan ) {
-            _panEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
         }
     }
 
@@ -441,119 +479,19 @@ THREE.CameraControls = function (object, domElement, controller) {
         _this.dispatchEvent( endEvent );
     }
 
-    function touchstart( event ) {
-        if ( _this.enabled === false ) return;
-
-        switch ( event.touches.length ) {
-            case 1:
-                _state = STATE.TOUCH_ROTATE;
-                _rotateStart.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
-                _rotateEnd.copy( _rotateStart );
-                break;
-            case 2:
-                _state = STATE.TOUCH_ZOOM_PAN;
-                var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
-                var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
-                _touchZoomDistanceEnd = _touchZoomDistanceStart = Math.sqrt( dx * dx + dy * dy );
-
-                var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
-                var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
-                _panStart.copy( getMouseOnScreen( x, y ) );
-                _panEnd.copy( _panStart );
-                break;
-            default:
-                _state = STATE.NONE;
-        }
-        _this.dispatchEvent( startEvent );
-    }
-
-    function touchmove( event ) {
-        if ( _this.enabled === false ) return;
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        switch ( event.touches.length ) {
-            case 1:
-                _rotateEnd.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
-                break;
-            case 2:
-                var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
-                var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
-                _touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy );
-
-                var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
-                var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
-                _panEnd.copy( getMouseOnScreen( x, y ) );
-                break;
-            default:
-                _state = STATE.NONE;
-        }
-    }
-
-    function touchend( event ) {
-        if ( _this.enabled === false ) return;
-
-        switch ( event.touches.length ) {
-            case 1:
-                _rotateEnd.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
-                _rotateStart.copy( _rotateEnd );
-                break;
-            case 2:
-                _touchZoomDistanceStart = _touchZoomDistanceEnd = 0;
-
-                var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
-                var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
-                _panEnd.copy( getMouseOnScreen( x, y ) );
-                _panStart.copy( _panEnd );
-                break;
-        }
-
-        _state = STATE.NONE;
-        _this.dispatchEvent( endEvent );
-    }
-
-    function swipeListener(swipe, frame){
-        // Print its data when the state is start or stop
-        if (swipe.state === 'stop') {
-            var dir = swipe.direction;
-            var dirStr = dir[0] > 0.8 ? 'right' : dir[0] < -0.8 ? 'left'
-                       : dir[1] > 0.8 ? 'up'    : dir[1] < -0.8 ? 'down'
-                       : dir[2] > 0.8 ? 'backward' : 'forward';
-            if(dirStr === 'left' || dirStr === 'right'){
-                console.log(swipe.state, swipe.type, swipe.id, dirStr,
-                            'direction:', dir, 'speed:', swipe.speed);
-
-
-                // Move opposite of the swipe
-                if(dirStr == 'left'){
-                    _this.curYAngle -= (swipe.speed / 15);
-                } else {
-                    _this.curYAngle += (swipe.speed / 15);
-                }
-
-                updateCamera();
-            }
-        }
-    }
-
-    controller.on('swipe', swipeListener);
-
     this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 
-    // this.domElement.addEventListener( 'mousedown', mousedown, false );
+    this.domElement.addEventListener( 'mousedown', mousedown, false );
 
-    // this.domElement.addEventListener( 'mousewheel', mousewheel, false );
-    // this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false ); // firefox
-
-    // this.domElement.addEventListener( 'touchstart', touchstart, false );
-    // this.domElement.addEventListener( 'touchend', touchend, false );
-    // this.domElement.addEventListener( 'touchmove', touchmove, false );
-
-    window.addEventListener( 'keydown', keydown, false );
-    window.addEventListener( 'keyup', keyup, false );
+    this.domElement.addEventListener( 'mousewheel', mousewheel, false );
+    this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false ); // firefox
 
     this.handleResize();
+
+    controller.addStep(function(frame){
+        _this.updateFrame(frame);
+        return frame;
+    });
 
     // force an update at start
     this.update();
