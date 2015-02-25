@@ -4,12 +4,13 @@
  * @author Mark Lundin  / http://mark-lundin.com
  */
 
-THREE.CameraControls = function ( object, domElement ) {
+THREE.CameraControls = function (object, domElement, controller) {
     var _this = this;
     var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
 
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
+    this.controller = controller;
 
     // API
     this.enabled = true;
@@ -67,6 +68,13 @@ THREE.CameraControls = function ( object, domElement ) {
     var startEvent = { type: 'start'};
     var endEvent = { type: 'end'};
 
+    this.curYAngle = 0;
+    this.curXAngle = 0;
+    this.curZAngle = 0;
+
+    this.yAxis = new THREE.Vector3(0,1,0);
+    this.xAxis = new THREE.Vector3(0,0,1);
+    this.zAxis = new THREE.Vector3(1,0,0);
 
     // methods
     this.handleResize = function () {
@@ -115,7 +123,7 @@ THREE.CameraControls = function ( object, domElement ) {
                 ( pageX - _this.screen.width * 0.5 - _this.screen.left ) / (_this.screen.width*.5),
                 ( _this.screen.height * 0.5 + _this.screen.top - pageY ) / (_this.screen.height*.5),
                 0.0
-            );
+            );on
             var length = mouseOnBall.length();
 
             if ( _this.noRoll ) {
@@ -274,28 +282,89 @@ THREE.CameraControls = function ( object, domElement ) {
     // listeners
 
     function keydown( event ) {
-        if ( _this.enabled === false ) return;
+        console.log(event.keyCode);
+        /**
+         * 37 = left
+         * 39 = right
+         * 38 = up
+         * 40 = down
+         */
 
-        window.removeEventListener( 'keydown', keydown );
+        switch(event.keyCode){
+            // Left
+            case 37:
+                console.log('Left');
+                _this.curYAngle += 10;
+                break;
+            // Right
+            case 39:
+                console.log('Right');
+                _this.curYAngle -= 10;
+                break;
 
-        _prevState = _state;
+            // Up
+            case 38:
+                console.log('Up');
+                _this.curXAngle += 10;
+                break;
+            // Down
+            case 40:
+                console.log('Down');
+                _this.curXAngle -= 10;
+                break;
 
-        if ( _state !== STATE.NONE ) {
-            return;
-        } else if ( event.keyCode === _this.keys[ STATE.ROTATE ] && !_this.noRotate ) {
-            _state = STATE.ROTATE;
-        } else if ( event.keyCode === _this.keys[ STATE.ZOOM ] && !_this.noZoom ) {
-            _state = STATE.ZOOM;
-        } else if ( event.keyCode === _this.keys[ STATE.PAN ] && !_this.noPan ) {
-            _state = STATE.PAN;
+            // Space
+            case 32:
+                _this.curXAngle = 0;
+                _this.curYAngle = 0;
+                break;
+            default:
+                return;
         }
+
+        updateCamera();
+
+        // console.log('keydown', event);
+        // if ( _this.enabled === false ) return;
+
+        // window.removeEventListener( 'keydown', keydown );
+
+        // _prevState = _state;
+
+        // if ( _state !== STATE.NONE ) {
+        //     return;
+        // } else if ( event.keyCode === _this.keys[ STATE.ROTATE ] && !_this.noRotate ) {
+        //     _state = STATE.ROTATE;
+        // } else if ( event.keyCode === _this.keys[ STATE.ZOOM ] && !_this.noZoom ) {
+        //     _state = STATE.ZOOM;
+        // } else if ( event.keyCode === _this.keys[ STATE.PAN ] && !_this.noPan ) {
+        //     _state = STATE.PAN;
+        // }
+    }
+
+    function updateCamera(){
+        var xPrime = new THREE.Vector3(Math.cos(degToRad(_this.curYAngle)), Math.sin(degToRad(_this.curYAngle)), 0).normalize();
+
+        console.log('X: '+_this.curXAngle);
+        console.log('Y: '+_this.curYAngle);
+        console.log('Z: '+_this.curZAngle);
+
+        _this.object.rotateOnAxis(_this.yAxis, degToRad(_this.curYAngle));
+        _this.object.rotateOnAxis(xPrime, degToRad(_this.curXAngle));
+        //_this.object.rotateOnAxis(zAxis, _this.curZAngle);
+
+        _this.dispatchEvent( changeEvent );
     }
 
     function keyup( event ) {
-        if ( _this.enabled === false ) return;
+        // if ( _this.enabled === false ) return;
 
-        _state = _prevState;
-        window.addEventListener( 'keydown', keydown, false );
+        // _state = _prevState;
+        // window.addEventListener( 'keydown', keydown, false );
+    }
+
+    function degToRad(deg) {
+        return deg * Math.PI / 180;
     }
 
     function mousedown( event ) {
@@ -444,16 +513,42 @@ THREE.CameraControls = function ( object, domElement ) {
         _this.dispatchEvent( endEvent );
     }
 
+    function swipeListener(swipe, frame){
+        // Print its data when the state is start or stop
+        if (swipe.state === 'stop') {
+            var dir = swipe.direction;
+            var dirStr = dir[0] > 0.8 ? 'right' : dir[0] < -0.8 ? 'left'
+                       : dir[1] > 0.8 ? 'up'    : dir[1] < -0.8 ? 'down'
+                       : dir[2] > 0.8 ? 'backward' : 'forward';
+            if(dirStr === 'left' || dirStr === 'right'){
+                console.log(swipe.state, swipe.type, swipe.id, dirStr,
+                            'direction:', dir, 'speed:', swipe.speed);
+
+
+                // Move opposite of the swipe
+                if(dirStr == 'left'){
+                    _this.curYAngle -= (swipe.speed / 15);
+                } else {
+                    _this.curYAngle += (swipe.speed / 15);
+                }
+
+                updateCamera();
+            }
+        }
+    }
+
+    controller.on('swipe', swipeListener);
+
     this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 
-    this.domElement.addEventListener( 'mousedown', mousedown, false );
+    // this.domElement.addEventListener( 'mousedown', mousedown, false );
 
-    this.domElement.addEventListener( 'mousewheel', mousewheel, false );
-    this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false ); // firefox
+    // this.domElement.addEventListener( 'mousewheel', mousewheel, false );
+    // this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false ); // firefox
 
-    this.domElement.addEventListener( 'touchstart', touchstart, false );
-    this.domElement.addEventListener( 'touchend', touchend, false );
-    this.domElement.addEventListener( 'touchmove', touchmove, false );
+    // this.domElement.addEventListener( 'touchstart', touchstart, false );
+    // this.domElement.addEventListener( 'touchend', touchend, false );
+    // this.domElement.addEventListener( 'touchmove', touchmove, false );
 
     window.addEventListener( 'keydown', keydown, false );
     window.addEventListener( 'keyup', keyup, false );

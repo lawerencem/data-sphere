@@ -20,6 +20,7 @@ window.DataSphere = (function() {
     var height = window.innerHeight;
     var width = window.innerWidth;
     var stats;
+    var controller;
 
     function objectify(d) {
         var object = new THREE.CSS3DObject(this);  // jshint ignore:line
@@ -145,6 +146,7 @@ window.DataSphere = (function() {
                     console.log('onClick');
                     console.log(d);
                     camera.lookAt(d.helix.position);
+                    camera.dispatchEvent({ type: 'change' });
                 });
 
             var dataElements = elements.append('div')
@@ -260,11 +262,12 @@ window.DataSphere = (function() {
             stats.domElement.style.cssText = 'position: absolute; right: 0; top: 0; z-index: 100; ';
             document.body.appendChild( stats.domElement );
 
+            controller = new Leap.Controller({enableGestures: true});
 
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(40, (width / height), 1, 100000);
-            camera.position.z = 1;
+            camera.position.z = 0;
             camera.position.x = 0;
             camera.position.y = 0;
             camera.setLens(30);
@@ -274,7 +277,7 @@ window.DataSphere = (function() {
             cssrenderer.domElement.style.position = 'absolute';
             document.getElementById('container').appendChild(cssrenderer.domElement);
 
-            controls = new THREE.CameraControls(camera, cssrenderer.domElement);
+            controls = new THREE.CameraControls(camera, cssrenderer.domElement, controller);
             controls.rotateSpeed = this.rotateSpeed;
             controls.minDistance = this.minDistance;
             controls.maxDistance = this.maxDistance;
@@ -291,6 +294,41 @@ window.DataSphere = (function() {
                         console.log(d);
                         DataSphere.transform(d);
                     });
+
+            // Show the hands from the leap
+            // Leap.loop()
+            //     .use('boneHand', {
+            //       targetEl: document.body,
+            //       arm: true,
+            //     });
+
+            // http://codepen.io/neptunius/pen/AJvbl?editors=101
+            // Emit gestures before frames
+            controller.addStep(function(frame){
+                for(var g = 0; g < frame.gestures.length; g++){
+                    var gesture = frame.gestures[g];
+                    controller.emit(gesture.type, gesture, frame);
+                }
+                return frame;
+            });
+
+            // Swipe event listener
+            // controller.on('swipe', function(swipe, frame){
+            //       // Print its data when the state is start or stop
+            //       if (swipe.state == 'start' || swipe.state == 'stop') {
+            //         var dir = swipe.direction;
+            //         var dirStr = dir[0] > 0.8 ? 'right' : dir[0] < -0.8 ? 'left'
+            //                    : dir[1] > 0.8 ? 'up'    : dir[1] < -0.8 ? 'down'
+            //                    : dir[2] > 0.8 ? 'backward' : 'forward';
+            //         console.log(swipe.state, swipe.type, swipe.id, dirStr,
+            //                     'direction:', dir);
+            //         console.log(swipe);
+            //       }
+            // });
+
+
+
+            controller.connect();
         },
 
         render: function() {
@@ -301,25 +339,27 @@ window.DataSphere = (function() {
             TWEEN.removeAll();
 
             scene.children.forEach(function(object) {
-                var newPos = object.element.__data__[layout].position;
-                var coords = new TWEEN.Tween(object.position);
-                coords.to({
-                        x: newPos.x,
-                        y: newPos.y,
-                        z: newPos.z
-                    }, DataSphere.transformDuration)
-                    .easing(TWEEN.Easing.Sinusoidal.InOut)
-                    .start();
+                if(object.element && object.element.__data__){
+                    var newPos = object.element.__data__[layout].position;
+                    var coords = new TWEEN.Tween(object.position);
+                    coords.to({
+                            x: newPos.x,
+                            y: newPos.y,
+                            z: newPos.z
+                        }, DataSphere.transformDuration)
+                        .easing(TWEEN.Easing.Sinusoidal.InOut)
+                        .start();
 
-                var newRot = object.element.__data__[layout].rotation;
-                var rotate = new TWEEN.Tween(object.rotation);
-                rotate.to({
-                        x: newRot.x,
-                        y: newRot.y,
-                        z: newRot.z
-                    }, DataSphere.transformDuration)
-                    .easing(TWEEN.Easing.Sinusoidal.InOut)
-                    .start();
+                    var newRot = object.element.__data__[layout].rotation;
+                    var rotate = new TWEEN.Tween(object.rotation);
+                    rotate.to({
+                            x: newRot.x,
+                            y: newRot.y,
+                            z: newRot.z
+                        }, DataSphere.transformDuration)
+                        .easing(TWEEN.Easing.Sinusoidal.InOut)
+                        .start();
+                }
             });
 
             var update = new TWEEN.Tween(this);
