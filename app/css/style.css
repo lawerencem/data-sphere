@@ -41,7 +41,6 @@ h5 {
 #loading {
   width: 100px;
   height: 100px;
-  background: url(img/loading.gif) no-repeat 5px 3px;
   position: absolute;
   top:0;
   bottom: 0;
