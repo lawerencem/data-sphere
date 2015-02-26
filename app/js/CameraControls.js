@@ -141,81 +141,23 @@ THREE.CameraControls = function (object, domElement, controller) {
 
     // Leap helper functions
     this.transformFactor = function(action) {
-        switch(action) {
-            case 'rotate':
-            return _this.rotateSpeed * (_this.rotateHandPosition ? 1 : _this.fingerFactor);
-            case 'zoom':
-            return _this.zoomSpeed * (_this.zoomHandPosition ? 1 : _this.fingerFactor);
-            case 'pan':
-            return _this.panSpeed * (_this.panHandPosition ? 1 : _this.fingerFactor);
-        };
+        return _this.rotateSpeed * (_this.rotateHandPosition ? 1 : _this.fingerFactor);
     };
 
     this.rotateTransform = function(delta) {
-        return _this.transformFactor('rotate') * THREE.Math.mapLinear(delta, 100, -100, -Math.PI, Math.PI);
+        return _this.transformFactor() * THREE.Math.mapLinear(delta, 100, -100, -Math.PI, Math.PI);
     };
 
-    this.zoomTransform = function(delta) {
-        return _this.transformFactor('zoom') * THREE.Math.mapLinear(delta, -400, 400, -_this.step, _this.step);
-    };
-
-    this.panTransform = function(delta) {
-        return _this.transformFactor('pan') * THREE.Math.mapLinear(delta, -400, 400, -_this.step, _this.step);
-    };
-
-    this.applyGesture = function(frame, action) {
+    this.shouldRotate = function(frame) {
         var hl = frame.hands.length;
-        var fl = frame.pointables.length;
+        var fl = 0;
+        for(var i =0; i < frame.fingers.length; i++){
+            if(frame.fingers[i].extended){
+                fl++;
+            }
+        }
 
-        switch(action) {
-            case 'rotate':
-            if (_this.rotateHands instanceof Array) {
-                if (_this.rotateFingers instanceof Array) {
-                    if (_this.rotateHands[0] <= hl && hl <= _this.rotateHands[1] && _this.rotateFingers[0] <= fl && fl <= _this.rotateFingers[1]) return true;
-                } else {
-                    if (_this.rotateHands[0] <= hl && hl <= _this.rotateHands[1] && _this.rotateFingers == fl) return true;
-                };
-            } else {
-                if (_this.rotateFingers instanceof Array) {
-                    if (_this.rotateHands == hl && _this.rotateFingers[0] <= fl && fl <= _this.rotateFingers[1]) return true;
-                } else {
-                    if (_this.rotateHands == hl && _this.rotateFingers == fl) return true;
-                };
-            };
-            break;
-            case 'zoom':
-            if (_this.zoomHands instanceof Array) {
-                if (_this.zoomFingers instanceof Array) {
-                    if (_this.zoomHands[0] <= hl && hl <= _this.zoomHands[1] && _this.zoomFingers[0] <= fl && fl <= _this.zoomFingers[1]) return true;
-                } else {
-                    if (_this.zoomHands[0] <= hl && hl <= _this.zoomHands[1] && _this.zoomFingers == fl) return true;
-                };
-            } else {
-                if (_this.zoomFingers instanceof Array) {
-                    if (_this.zoomHands == hl && _this.zoomFingers[0] <= fl && fl <= _this.zoomFingers[1]) return true;
-                } else {
-                    if (_this.zoomHands == hl && _this.zoomFingers == fl) return true;
-                };
-            };
-            break;
-            case 'pan':
-            if (_this.panHands instanceof Array) {
-                if (_this.panFingers instanceof Array) {
-                    if (_this.panHands[0] <= hl && hl <= _this.panHands[1] && _this.panFingers[0] <= fl && fl <= _this.panFingers[1]) return true;
-                } else {
-                    if (_this.panHands[0] <= hl && hl <= _this.panHands[1] && _this.panFingers == fl) return true;
-                };
-            } else {
-                if (_this.panFingers instanceof Array) {
-                    if (_this.panHands == hl && _this.panFingers[0] <= fl && fl <= _this.panFingers[1]) return true;
-                } else {
-                    if (_this.panHands == hl && _this.panFingers == fl) return true;
-                };
-            };
-            break;
-        };
-
-        return false;
+        return _this.rotateHands === hl && (_this.rotateFingers[0] <= fl && fl <= _this.rotateFingers[1]);
     };
 
     this.hand = function(frame, action) {
@@ -286,7 +228,7 @@ THREE.CameraControls = function (object, domElement, controller) {
 
     // Leap methods
     this.leapRotateCamera = function(frame) {
-        if (_this.applyGesture(frame, 'rotate')) {
+        if(_this.shouldRotate(frame)) {
             // rotate around axis in xy-plane (in target coordinate system) which is orthogonal to camera vector
             var y = _this.position(frame, 'rotate')[1];
             if (!_rotateYLast){
@@ -313,12 +255,13 @@ THREE.CameraControls = function (object, domElement, controller) {
             _this.object.lookAt(_this.target);
 
             _rotateYLast = y;
-            _rotateXLast = x;   
+            _rotateXLast = x;
+
+            _this.dispatchEvent( changeEvent );
         } else {
             _rotateYLast = null;
             _rotateXLast = null;      
         }
-        _this.dispatchEvent( changeEvent );
     };
 
     this.updateFrame = function(frame) {
